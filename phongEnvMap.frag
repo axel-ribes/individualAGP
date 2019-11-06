@@ -29,6 +29,13 @@ uniform float attConst;
 uniform float attLinear;
 uniform float attQuadratic;
 
+
+//get the refract  for each color
+vec3 refractR;
+vec3 refractG;
+vec3 refractB;
+
+
 in vec3 ex_WorldNorm;
 in vec3 ex_WorldView;
 in vec3 ex_N;
@@ -55,11 +62,29 @@ void main(void) {
 
 	float attenuation=1.0f/(attConst + attLinear * ex_D + attQuadratic * ex_D*ex_D);
 
+
+	
+	refractR = refract(-ex_WorldView, ex_WorldNorm,1.30 ); 
+	refractG = refract(-ex_WorldView, ex_WorldNorm,1.35 ); 
+	refractB = refract(-ex_WorldView, ex_WorldNorm,1.40 ); 
+	vec4 refractCalculatedColor;
+	refractCalculatedColor.x = textureCube(textureUnit1, refractR).r;  
+    refractCalculatedColor.y = textureCube(textureUnit1, refractG).g;  
+    refractCalculatedColor.z = textureCube(textureUnit1, refractB).b;  
+    refractCalculatedColor.a = 1.0;
+
+
+
 	//Attenuation does not affect transparency
 	vec4 litColour = (ambientI + vec4((diffuseI.rgb *specularI.rgb)/attenuation,1.0));
-		
 	vec3 reflectTexCoord = reflect(-ex_WorldView, normalize(ex_WorldNorm));
-	out_Color = texture(textureUnit1, reflectTexCoord) * litColour;
+	reflectTexCoord.y = -reflectTexCoord.y ;
+
+	vec4 combinedColor = mix(refractCalculatedColor, litColour, 1.0);
+
+	//out_Color = vec4(refractG,1.0);
+	out_Color = refractCalculatedColor;
+	//out_Color = texture(textureUnit1, reflectTexCoord) * combinedColor;
   //out_Color = vec4 (1.0f,1.0f,1.0f,1.0f);
 
 

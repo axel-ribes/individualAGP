@@ -22,11 +22,6 @@ GLuint phongShaderProgram;
 GLuint reflectShaderProgram;
 GLuint refractShaderProgram;
 
-GLuint changingReflectOrRefract = reflectShaderProgram;
-GLuint changingGroundShaderPhongOrGouraud; //to change between gouraud and phong
-GLuint changingbunnyShader;
-GLuint changingbunnyShader2; //separating bunny shader from bunny2 shader
-
 
 GLuint meshIndexCount = 0;
 GLuint toonIndexCount = 0;
@@ -221,10 +216,6 @@ void init(void) {
 	uniformIndex = glGetUniformLocation(phongShaderProgram, "attQuadratic");
 	glUniform1f(uniformIndex, attQuadratic);
 
-	changingGroundShaderPhongOrGouraud = phongShaderProgram;
-	changingbunnyShader = phongShaderProgram;
-	changingbunnyShader2 = phongShaderProgram;
-
 
 
 
@@ -241,8 +232,6 @@ void init(void) {
 	glUniform1i(uniformIndex, 0);
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "textureUnit1");
 	glUniform1i(uniformIndex, 1);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "cameraPos");
-	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
 
 	refractShaderProgram = rt3d::initShaders("../sourceCode/refractPhongEnvMap.vert", "../sourceCode/refractPhongEnvMap.frag");
 	rt3d::setLight(refractShaderProgram, light0);
@@ -257,8 +246,7 @@ void init(void) {
 	glUniform1i(uniformIndex, 0);
 	uniformIndex = glGetUniformLocation(refractShaderProgram, "textureUnit1");
 	glUniform1i(uniformIndex, 1);
-	uniformIndex = glGetUniformLocation(refractShaderProgram, "cameraPos");
-	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
+	
 
 
 	textureProgram = rt3d::initShaders("../sourceCode/textured.vert", "../sourceCode/textured.frag");
@@ -326,108 +314,7 @@ void update(void) {
 	//turn camera
 	if (keys[SDL_SCANCODE_COMMA]) r -= 1.0f;
 	if (keys[SDL_SCANCODE_PERIOD]) r += 1.0f;
-
-	//future changement of effect with numbers
-	bool SelectedBunnyIsTheFirst = true;
-	if (keys[SDL_SCANCODE_LSHIFT]) {
-		SelectedBunnyIsTheFirst = false;
-	}
-
-
-	if (keys[SDL_SCANCODE_2]) {
-		if (SelectedBunnyIsTheFirst)
-		{
-			changingbunnyShader = phongShaderProgram; //bunny is phong shaded
-		}
-		else
-		{
-			changingbunnyShader2 = phongShaderProgram;
-		}
-		changingGroundShaderPhongOrGouraud = phongShaderProgram;
-		material0 = materialMatt; //ground and bunny will be matt
-		bunnymaterial = material0;
-	}
-
-	if (keys[SDL_SCANCODE_3]) {
-		if (SelectedBunnyIsTheFirst)
-		{
-			changingbunnyShader = phongShaderProgram; //bunny is phong shaded
-		}
-		else
-		{
-			changingbunnyShader2 = phongShaderProgram;
-		}
-		changingGroundShaderPhongOrGouraud = phongShaderProgram;
-		material0 = materialGlossy; //ground and bunny will be glossy
-		bunnymaterial = material0;
-	}
-
-	if (keys[SDL_SCANCODE_4]) {
-		if (SelectedBunnyIsTheFirst)
-		{
-		}
-		else
-		{
-		}
-	}
-
-	if (keys[SDL_SCANCODE_5]) {
-		if (SelectedBunnyIsTheFirst)
-		{
-		}
-		else
-		{
-		}
-	}
-
-	if (keys[SDL_SCANCODE_7]) {
-		changingReflectOrRefract = refractShaderProgram;
-		if (SelectedBunnyIsTheFirst)
-		{
-			changingbunnyShader = changingReflectOrRefract;
-		}
-		else
-		{
-			changingbunnyShader2 = changingReflectOrRefract;
-		}
-		changingGroundShaderPhongOrGouraud = phongShaderProgram; //always set ground to phong why not gouraud
-		material0 = materialMatt; //ground and bunny will be matt
-		bunnymaterial = basicmaterial;
-	}
-	if (keys[SDL_SCANCODE_8]) {
-		changingReflectOrRefract = reflectShaderProgram;
-		if (SelectedBunnyIsTheFirst)
-		{
-			changingbunnyShader = changingReflectOrRefract;
-		}
-		else
-		{
-			changingbunnyShader2 = changingReflectOrRefract;
-		}
-		changingGroundShaderPhongOrGouraud = phongShaderProgram; //always set ground to phong why not gouraud
-		material0 = materialMatt; //ground and bunny will be matt
-		bunnymaterial = basicmaterial;
-	}
-	if (keys[SDL_SCANCODE_9]) {
-		if (SelectedBunnyIsTheFirst)
-		{
-		}
-		else
-		{
-		}
-	}
-
-	if (keys[SDL_SCANCODE_0]) {
-		if (SelectedBunnyIsTheFirst)
-		{
-		}
-		else
-		{
-		}
-	}
 }
-
-
 void draw(SDL_Window* window) {
 	// clear the screen
 	glEnable(GL_CULL_FACE);
@@ -487,53 +374,24 @@ void draw(SDL_Window* window) {
 	rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 	
-
-	// draw a cube for ground plane
-	glUseProgram(changingGroundShaderPhongOrGouraud);
-	rt3d::setLightPos(changingGroundShaderPhongOrGouraud, glm::value_ptr(tmp));
-	rt3d::setUniformMatrix4fv(changingGroundShaderPhongOrGouraud, "projection", glm::value_ptr(projection));
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	mvStack.push(mvStack.top());
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-10.0f, -0.1f, -10.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0f, 0.1f, 20.0f));
-	rt3d::setUniformMatrix4fv(changingGroundShaderPhongOrGouraud, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::setMaterial(changingGroundShaderPhongOrGouraud, material0);
-	rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
-	mvStack.pop();
-
-
-
-	
 	// draw the  bunny
-	glUseProgram(changingbunnyShader);
+	glUseProgram(reflectShaderProgram);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	glm::mat4 modelMatrix(1.0);
 	mvStack.top() = mvStack.top() * modelMatrix;
-	rt3d::setUniformMatrix4fv(changingReflectOrRefract, "modelMatrix", glm::value_ptr(mvStack.top()));
-
-
-	rt3d::setLightPos(changingbunnyShader, glm::value_ptr(tmp));
-	rt3d::setUniformMatrix4fv(changingbunnyShader, "projection", glm::value_ptr(projection));
+	GLuint uniformIndex = glGetUniformLocation(reflectShaderProgram, "cameraPos");
+	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
+	rt3d::setLightPos(reflectShaderProgram, glm::value_ptr(tmp));
+	rt3d::setUniformMatrix4fv(reflectShaderProgram, "projection", glm::value_ptr(projection));
 	mvStack.push(mvStack.top());
 	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
-	rt3d::setUniformMatrix4fv(changingbunnyShader, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::setMaterial(changingbunnyShader, bunnymaterial);
-	rt3d::drawIndexedMesh(meshObjects[2], toonIndexCount, GL_TRIANGLES);
-	mvStack.pop();
-
-	// draw the second bunny
-	glUseProgram(changingbunnyShader2);
-	rt3d::setLightPos(changingbunnyShader2, glm::value_ptr(tmp));
-	rt3d::setUniformMatrix4fv(changingbunnyShader2, "projection", glm::value_ptr(projection));
-	mvStack.push(mvStack.top());
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(0.0f, 0.1f, -2.0f));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
-	rt3d::setUniformMatrix4fv(changingbunnyShader2, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::setMaterial(changingbunnyShader2, bunnymaterial);
+	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
+	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+	rt3d::setMaterial(reflectShaderProgram, bunnymaterial);
 	rt3d::drawIndexedMesh(meshObjects[2], toonIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 

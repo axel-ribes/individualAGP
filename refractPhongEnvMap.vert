@@ -10,6 +10,7 @@ uniform vec3 cameraPos;
 uniform mat4 modelMatrix;
 
 
+
 out vec3 ex_WorldNorm;
 out vec3 ex_WorldView;
 
