@@ -9,6 +9,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <stack>
+#include <iostream>
 
 using namespace std;
 #define DEG_TO_RADIAN 0.017453293
@@ -20,12 +21,11 @@ GLuint skyboxProgram;
 
 GLuint phongShaderProgram;
 GLuint reflectShaderProgram;
-GLuint refractShaderProgram;
 
 
 GLuint meshIndexCount = 0;
 GLuint toonIndexCount = 0;
-GLuint meshObjects[3];
+GLuint meshObjects[2];
 
 GLfloat r = 0.0f;
 
@@ -36,9 +36,15 @@ glm::vec3 up(0.0f, 1.0f, 0.0f);
 stack<glm::mat4> mvStack;
 
 // TEXTURE STUFF
-GLuint textures[2];
+GLuint textures[1];
 GLuint skybox[5];
 GLuint labels[5];
+
+struct materialState {
+	float reflecFactor;
+	float refractIndex;
+};
+materialState materialState1 = { 1,1.1};
 
 
 //light stuff
@@ -57,7 +63,6 @@ float attQuadratic = 0.01f;
 //opacity
 float theta = 0.0f;
 
-
 rt3d::materialStruct material0 = { //glossy
 	{0.2f, 0.4f, 0.2f, 1.0f}, // ambient
 	{0.8f, 1.8f, 0.8f, 1.0f}, // diffuse
@@ -65,30 +70,12 @@ rt3d::materialStruct material0 = { //glossy
 	5.0f  // shininess
 };
 
-rt3d::materialStruct bunnymaterial = material0;
-rt3d::materialStruct basicmaterial = { //glossy
+rt3d::materialStruct basicmaterial = { //white for bunny
 	{1.0f, 1.0f, 1.0f, 1.0f}, // ambient
 	{1.0f, 1.0f, 1.0f, 1.0f}, // diffuse
 	{1.0f, 1.0f, 1.0f, 1.0f}, // specular
 	1.0f  // shininess
 };
-
-
-rt3d::materialStruct materialMatt = { //matt
-	{0.2f, 0.4f, 0.2f, 1.0f},
-	{0.2f, 0.7f, 0.2f, 1.0f},
-	{0.0f, 0.1f, 0.0f, 1.0f},
-	0.1f
-};
-
-rt3d::materialStruct materialGlossy = {
-	{0.2f, 0.4f, 0.2f, 1.0f},
-	{0.8f, 1.8f, 0.8f, 1.0f},
-	{0.4f, 0.8f, 0.4f, 1.0f},
-	4.8f
-};
-
-
 
 // Set up rendering context
 SDL_Window* setupRC(SDL_GLContext& context) {
@@ -221,7 +208,11 @@ void init(void) {
 
 	reflectShaderProgram = rt3d::initShaders("../sourceCode/phongEnvMap.vert", "../sourceCode/phongEnvMap.frag");
 	rt3d::setLight(reflectShaderProgram, light0);
-	rt3d::setMaterial(reflectShaderProgram, material0);
+	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.reflecFactor");
+	glUniform1i(uniformIndex, materialState1.reflecFactor);
+	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.refractIndex");
+	glUniform1i(uniformIndex, materialState1.refractIndex);
+
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attConst");
 	glUniform1f(uniformIndex, attConstant);
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attLinear");
@@ -232,22 +223,6 @@ void init(void) {
 	glUniform1i(uniformIndex, 0);
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "textureUnit1");
 	glUniform1i(uniformIndex, 1);
-
-	refractShaderProgram = rt3d::initShaders("../sourceCode/refractPhongEnvMap.vert", "../sourceCode/refractPhongEnvMap.frag");
-	rt3d::setLight(refractShaderProgram, light0);
-	rt3d::setMaterial(refractShaderProgram, material0);
-	uniformIndex = glGetUniformLocation(refractShaderProgram, "attConst");
-	glUniform1f(uniformIndex, attConstant);
-	uniformIndex = glGetUniformLocation(refractShaderProgram, "attLinear");
-	glUniform1f(uniformIndex, attLinear);
-	uniformIndex = glGetUniformLocation(refractShaderProgram, "attQuadratic");
-	glUniform1f(uniformIndex, attQuadratic);
-	uniformIndex = glGetUniformLocation(refractShaderProgram, "textureUnit0");
-	glUniform1i(uniformIndex, 0);
-	uniformIndex = glGetUniformLocation(refractShaderProgram, "textureUnit1");
-	glUniform1i(uniformIndex, 1);
-	
-
 
 	textureProgram = rt3d::initShaders("../sourceCode/textured.vert", "../sourceCode/textured.frag");
 	skyboxProgram = rt3d::initShaders("../sourceCode/cubeMap.vert", "../sourceCode/cubeMap.frag");
@@ -272,7 +247,7 @@ void init(void) {
 	indices.clear();
 	rt3d::loadObj("../sourceCode/resources/bunny-5000.obj", verts, norms, tex_coords, indices);
 	toonIndexCount = indices.size();
-	meshObjects[2] = rt3d::createMesh(verts.size() / 3, verts.data(), nullptr, norms.data(), nullptr, toonIndexCount, indices.data());
+	meshObjects[1] = rt3d::createMesh(verts.size() / 3, verts.data(), nullptr, norms.data(), nullptr, toonIndexCount, indices.data());
 
 
 	glEnable(GL_DEPTH_TEST);
@@ -280,7 +255,6 @@ void init(void) {
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 }
-
 
 glm::vec3 moveForward(glm::vec3 pos, GLfloat angle, GLfloat d) {
 	return glm::vec3(pos.x + d * std::sin(r * DEG_TO_RADIAN), pos.y, pos.z - d * std::cos(r * DEG_TO_RADIAN));
@@ -290,26 +264,25 @@ glm::vec3 moveRight(glm::vec3 pos, GLfloat angle, GLfloat d) {
 	return glm::vec3(pos.x + d * std::cos(r * DEG_TO_RADIAN), pos.y, pos.z + d * std::sin(r * DEG_TO_RADIAN));
 }
 
-
 //keys to change and affect the program
 void update(void) {
 	const Uint8* keys = SDL_GetKeyboardState(NULL);
 
 	//to move camera
-	if (keys[SDL_SCANCODE_I]) eye = moveForward(eye, r, 0.1f);
-	if (keys[SDL_SCANCODE_K]) eye = moveForward(eye, r, -0.1f);
-	if (keys[SDL_SCANCODE_J]) eye = moveRight(eye, r, -0.1f);
-	if (keys[SDL_SCANCODE_L]) eye = moveRight(eye, r, 0.1f);
-	if (keys[SDL_SCANCODE_U]) eye.y += 0.1;
-	if (keys[SDL_SCANCODE_H]) eye.y -= 0.1;
+	if (keys[SDL_SCANCODE_I]) lightPos[2] -= 0.1;
+	if (keys[SDL_SCANCODE_J]) lightPos[0] -= 0.1;
+	if (keys[SDL_SCANCODE_K]) lightPos[2] += 0.1;
+	if (keys[SDL_SCANCODE_L]) lightPos[0] += 0.1;
+	if (keys[SDL_SCANCODE_U]) lightPos[1] += 0.1;
+	if (keys[SDL_SCANCODE_H]) lightPos[1] -= 0.1;
 
 	//to move lighpos
-	if (keys[SDL_SCANCODE_W]) lightPos[2] -= 0.1;
-	if (keys[SDL_SCANCODE_A]) lightPos[0] -= 0.1;
-	if (keys[SDL_SCANCODE_S]) lightPos[2] += 0.1;
-	if (keys[SDL_SCANCODE_D]) lightPos[0] += 0.1;
-	if (keys[SDL_SCANCODE_R]) lightPos[1] += 0.1;
-	if (keys[SDL_SCANCODE_F]) lightPos[1] -= 0.1;
+	if (keys[SDL_SCANCODE_W])  eye = moveForward(eye, r, 0.1f);
+	if (keys[SDL_SCANCODE_S])  eye = moveForward(eye, r, -0.1f);
+	if (keys[SDL_SCANCODE_A])  eye = moveRight(eye, r, -0.1f);
+	if (keys[SDL_SCANCODE_D])  eye = moveRight(eye, r, 0.1f);
+	if (keys[SDL_SCANCODE_R])  eye.y += 0.1;
+	if (keys[SDL_SCANCODE_F])  eye.y -= 0.1;
 
 	//turn camera
 	if (keys[SDL_SCANCODE_COMMA]) r -= 1.0f;
@@ -323,7 +296,6 @@ void draw(SDL_Window* window) {
 
 	glm::mat4 projection(1.0);
 	projection = glm::perspective(float(60.0f * DEG_TO_RADIAN), 800.0f / 600.0f, 1.0f, 150.0f);
-
 
 	GLfloat scale(1.0f); // just to allow easy scaling of complete scene
 
@@ -349,11 +321,8 @@ void draw(SDL_Window* window) {
 	mvStack.pop();
 	glCullFace(GL_BACK); // drawing inside of cube!
 
-
 	// back to remainder of rendering
 	glDepthMask(GL_TRUE); // make sure depth test is on
-
-
 
 	glUseProgram(phongShaderProgram);
 	rt3d::setUniformMatrix4fv(phongShaderProgram, "projection", glm::value_ptr(projection));
@@ -363,7 +332,6 @@ void draw(SDL_Window* window) {
 	light0.position[2] = tmp.z;
 	rt3d::setLightPos(phongShaderProgram, glm::value_ptr(tmp));
 
-	
 	// draw a small cube block at lightPos
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	mvStack.push(mvStack.top());
@@ -380,19 +348,25 @@ void draw(SDL_Window* window) {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	glm::mat4 modelMatrix(1.0);
-	mvStack.top() = mvStack.top() * modelMatrix;
 	GLuint uniformIndex = glGetUniformLocation(reflectShaderProgram, "cameraPos");
 	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
 	rt3d::setLightPos(reflectShaderProgram, glm::value_ptr(tmp));
 	rt3d::setUniformMatrix4fv(reflectShaderProgram, "projection", glm::value_ptr(projection));
+	glm::mat4 modelMatrix(1.0);
 	mvStack.push(mvStack.top());
 	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
-	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
 	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::setMaterial(reflectShaderProgram, bunnymaterial);
-	rt3d::drawIndexedMesh(meshObjects[2], toonIndexCount, GL_TRIANGLES);
+	//mvStack.pop();
+
+	//mvStack.top() = modelMatrix;
+	//mvStack.push(mvStack.top());
+	//mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
+	//mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
+	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
+
+	rt3d::setMaterial(reflectShaderProgram, basicmaterial);
+	rt3d::drawIndexedMesh(meshObjects[1], toonIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 
 	

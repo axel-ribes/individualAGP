@@ -4,6 +4,12 @@
 // Some drivers require the following
 precision highp float;
 
+struct materialState
+{
+	float reflecFactor;
+	float refractIndex;
+};
+
 struct lightStruct
 {
 	vec4 ambient;
@@ -22,7 +28,7 @@ struct materialStruct
 uniform lightStruct light;
 uniform materialStruct material;
 uniform sampler2D textureUnit0;
-uniform samplerCube textureUnit1;
+uniform samplerCube textureUnit1;uniform materialState materialState1; 
 
 
 uniform float attConst;
@@ -43,6 +49,7 @@ in vec3 ex_V;
 in vec3 ex_L;
 in float ex_D;
 layout(location = 0) out vec4 out_Color;
+vec4 reflect;
  
 void main(void) {
     
@@ -64,28 +71,25 @@ void main(void) {
 
 
 	
-	refractR = refract(-ex_WorldView, ex_WorldNorm,1.30 ); 
-	refractG = refract(-ex_WorldView, ex_WorldNorm,1.35 ); 
-	refractB = refract(-ex_WorldView, ex_WorldNorm,1.40 ); 
+	refractR = refract(-ex_WorldView, ex_WorldNorm,materialState1.refractIndex ); 
+	refractG = refract(-ex_WorldView, ex_WorldNorm,materialState1.refractIndex + 0.0001 ); 
+	refractB = refract(-ex_WorldView, ex_WorldNorm,materialState1.refractIndex + 0.0002 ); 
+	refractR.y = -refractR.y;
+	refractG.y = -refractG.y;
+	refractB.y = -refractB.y;
 	vec4 refractCalculatedColor;
 	refractCalculatedColor.x = textureCube(textureUnit1, refractR).r;  
     refractCalculatedColor.y = textureCube(textureUnit1, refractG).g;  
     refractCalculatedColor.z = textureCube(textureUnit1, refractB).b;  
     refractCalculatedColor.a = 1.0;
 
-
-
 	//Attenuation does not affect transparency
 	vec4 litColour = (ambientI + vec4((diffuseI.rgb *specularI.rgb)/attenuation,1.0));
 	vec3 reflectTexCoord = reflect(-ex_WorldView, normalize(ex_WorldNorm));
-	reflectTexCoord.y = -reflectTexCoord.y ;
+	reflectTexCoord.y = reflectTexCoord.y ;
 
-	vec4 combinedColor = mix(refractCalculatedColor, litColour, 1.0);
+	reflect = texture(textureUnit1, reflectTexCoord) * litColour;
 
-	//out_Color = vec4(refractG,1.0);
-	out_Color = refractCalculatedColor;
-	//out_Color = texture(textureUnit1, reflectTexCoord) * combinedColor;
-  //out_Color = vec4 (1.0f,1.0f,1.0f,1.0f);
-
-
+	vec4 combinedColor = mix(refractCalculatedColor, reflect, materialState1.reflecFactor);
+	out_Color = combinedColor;
 }
