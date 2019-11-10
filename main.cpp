@@ -20,7 +20,7 @@ GLuint skyboxProgram;
 
 
 GLuint phongShaderProgram;
-GLuint reflectShaderProgram;
+GLuint ChromaticDispersionShaderProgram;
 
 
 GLuint meshIndexCount = 0;
@@ -189,7 +189,6 @@ void init(void) {
 
 	phongShaderProgram = rt3d::initShaders("../sourceCode/phong-tex.vert", "../sourceCode/phong-tex.frag");
 	rt3d::setLight(phongShaderProgram, light0);
-	rt3d::setMaterial(phongShaderProgram, material0);
 	// set light attenuation shader uniforms
 	GLuint uniformIndex = glGetUniformLocation(phongShaderProgram, "attConst");
 	glUniform1f(uniformIndex, attConstant);
@@ -201,18 +200,18 @@ void init(void) {
 
 
 
-	reflectShaderProgram = rt3d::initShaders("../sourceCode/phongEnvMap.vert", "../sourceCode/phongEnvMap.frag");
-	rt3d::setLight(reflectShaderProgram, light0);
-	rt3d::setMaterial(reflectShaderProgram, material0);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attConst");
+	ChromaticDispersionShaderProgram = rt3d::initShaders("../sourceCode/phongEnvMap.vert", "../sourceCode/phongEnvMap.frag");
+	rt3d::setLight(ChromaticDispersionShaderProgram, light0);
+	rt3d::setMaterial(ChromaticDispersionShaderProgram, material0);
+	uniformIndex = glGetUniformLocation(ChromaticDispersionShaderProgram, "attConst");
 	glUniform1f(uniformIndex, attConstant);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attLinear");
+	uniformIndex = glGetUniformLocation(ChromaticDispersionShaderProgram, "attLinear");
 	glUniform1f(uniformIndex, attLinear);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attQuadratic");
+	uniformIndex = glGetUniformLocation(ChromaticDispersionShaderProgram, "attQuadratic");
 	glUniform1f(uniformIndex, attQuadratic);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "textureUnit0");
+	uniformIndex = glGetUniformLocation(ChromaticDispersionShaderProgram, "textureUnit0");
 	glUniform1i(uniformIndex, 0);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "textureUnit1");
+	uniformIndex = glGetUniformLocation(ChromaticDispersionShaderProgram, "textureUnit1");
 	glUniform1i(uniformIndex, 1);
 
 	textureProgram = rt3d::initShaders("../sourceCode/textured.vert", "../sourceCode/textured.frag");
@@ -320,27 +319,25 @@ void draw(SDL_Window* window) {
 	rt3d::setLightPos(phongShaderProgram, glm::value_ptr(tmp));
 	
 	// draw the  bunny
-	glUseProgram(reflectShaderProgram);
+	glUseProgram(ChromaticDispersionShaderProgram);
 
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	GLuint uniformIndex = glGetUniformLocation(reflectShaderProgram, "cameraPos");
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "dispersionSize");
+	GLuint uniformIndex = glGetUniformLocation(ChromaticDispersionShaderProgram, "cameraPos");
+	uniformIndex = glGetUniformLocation(ChromaticDispersionShaderProgram, "dispersionSize");
 	glUniform1f(uniformIndex, dispersionSize);
-	
 	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
-	rt3d::setLightPos(reflectShaderProgram, glm::value_ptr(tmp));
-	rt3d::setUniformMatrix4fv(reflectShaderProgram, "projection", glm::value_ptr(projection));
+	rt3d::setLightPos(ChromaticDispersionShaderProgram, glm::value_ptr(tmp));
+	rt3d::setUniformMatrix4fv(ChromaticDispersionShaderProgram, "projection", glm::value_ptr(projection));
 	glm::mat4 modelMatrix(1.0);
 	mvStack.push(mvStack.top());
 	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
-	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
-
-	rt3d::setMaterial(reflectShaderProgram, basicmaterial);
+	rt3d::setUniformMatrix4fv(ChromaticDispersionShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
+	rt3d::setUniformMatrix4fv(ChromaticDispersionShaderProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
+	rt3d::setMaterial(ChromaticDispersionShaderProgram, basicmaterial);
 	rt3d::drawIndexedMesh(meshObjects[1], toonIndexCount, GL_TRIANGLES);
 	mvStack.pop();
 

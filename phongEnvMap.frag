@@ -63,16 +63,20 @@ void main(void) {
 	specularI = specularI * pow(max(dot(R,ex_V),0), material.shininess);
 
 	float attenuation=1.0f/(attConst + attLinear * ex_D + attQuadratic * ex_D*ex_D);
-
-
 	
+	//separating each component of the light and refracting each component with different direction
 	refractR = refract(-ex_WorldView, ex_WorldNorm,dispersionSize); 
 	refractG = refract(-ex_WorldView, ex_WorldNorm, dispersionSize * 2 ); 
 	refractB = refract(-ex_WorldView, ex_WorldNorm,dispersionSize * 3 ); 
+	
+	//world reversed in the object so reversing each coordinates
 	refractR.y = -refractR.y;
 	refractG.y = -refractG.y;
 	refractB.y = -refractB.y;
+
 	vec4 refractCalculatedColor;
+
+	//calculating the color applied with the texture of the environnement
 	refractCalculatedColor.x = textureCube(textureUnit1, refractR).r;  
     refractCalculatedColor.y = textureCube(textureUnit1, refractG).g;  
     refractCalculatedColor.z = textureCube(textureUnit1, refractB).b;  
@@ -83,6 +87,7 @@ void main(void) {
 	vec3 reflectTexCoord = reflect(-ex_WorldView, normalize(ex_WorldNorm));
 	reflectTexCoord.y = reflectTexCoord.y ;
 
+	//initial
 	reflect = texture(textureUnit1, reflectTexCoord) * litColour;
 
 	vec4 combinedColor = mix(refractCalculatedColor, reflect, 0);

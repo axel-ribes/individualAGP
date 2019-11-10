@@ -18,7 +18,6 @@ in  vec3 in_Normal;
 out vec3 ex_N;
 out vec3 ex_V;
 out vec3 ex_L;
-
 out float ex_D;
 
 // multiply each vertex position by the MVP matrix
