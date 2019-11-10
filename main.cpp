@@ -42,10 +42,10 @@ GLuint labels[5];
 
 struct materialState {
 	float reflecFactor;
-	float refractIndex;
+	float refractIndex; 
 };
 materialState materialState1 = { 1,1.1};
-
+float dispersionSize = 0.0001;
 
 //light stuff
 rt3d::lightStruct light0 = {
@@ -208,11 +208,7 @@ void init(void) {
 
 	reflectShaderProgram = rt3d::initShaders("../sourceCode/phongEnvMap.vert", "../sourceCode/phongEnvMap.frag");
 	rt3d::setLight(reflectShaderProgram, light0);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.reflecFactor");
-	glUniform1i(uniformIndex, materialState1.reflecFactor);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.refractIndex");
-	glUniform1i(uniformIndex, materialState1.refractIndex);
-
+	rt3d::setMaterial(reflectShaderProgram, material0);
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attConst");
 	glUniform1f(uniformIndex, attConstant);
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "attLinear");
@@ -287,6 +283,10 @@ void update(void) {
 	//turn camera
 	if (keys[SDL_SCANCODE_COMMA]) r -= 1.0f;
 	if (keys[SDL_SCANCODE_PERIOD]) r += 1.0f;
+
+	//interact with chromatic dispersion
+	if (keys[SDL_SCANCODE_KP_PLUS]) dispersionSize += 0.0001;
+	if (keys[SDL_SCANCODE_KP_MINUS]) dispersionSize -= 0.0001;
 }
 void draw(SDL_Window* window) {
 	// clear the screen
@@ -344,11 +344,21 @@ void draw(SDL_Window* window) {
 	
 	// draw the  bunny
 	glUseProgram(reflectShaderProgram);
+
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	GLuint uniformIndex = glGetUniformLocation(reflectShaderProgram, "cameraPos");
+	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.reflecFactor");
+	glUniform1i(uniformIndex, materialState1.reflecFactor);
+	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.refractIndex");
+	glUniform1i(uniformIndex, materialState1.refractIndex);
+
+
+	uniformIndex = glGetUniformLocation(reflectShaderProgram, "dispersionSize");
+	glUniform1f(uniformIndex, dispersionSize);
+	
 	glUniform3fv(uniformIndex, 1, glm::value_ptr(eye));
 	rt3d::setLightPos(reflectShaderProgram, glm::value_ptr(tmp));
 	rt3d::setUniformMatrix4fv(reflectShaderProgram, "projection", glm::value_ptr(projection));

@@ -34,6 +34,7 @@ uniform samplerCube textureUnit1;uniform materialState materialState1;
 uniform float attConst;
 uniform float attLinear;
 uniform float attQuadratic;
+uniform float dispersionSize;
 
 
 //get the refract  for each color
@@ -71,9 +72,9 @@ void main(void) {
 
 
 	
-	refractR = refract(-ex_WorldView, ex_WorldNorm,materialState1.refractIndex ); 
-	refractG = refract(-ex_WorldView, ex_WorldNorm,materialState1.refractIndex + 0.0001 ); 
-	refractB = refract(-ex_WorldView, ex_WorldNorm,materialState1.refractIndex + 0.0002 ); 
+	refractR = refract(-ex_WorldView, ex_WorldNorm,dispersionSize); 
+	refractG = refract(-ex_WorldView, ex_WorldNorm, dispersionSize * 2 ); 
+	refractB = refract(-ex_WorldView, ex_WorldNorm,dispersionSize * 3 ); 
 	refractR.y = -refractR.y;
 	refractG.y = -refractG.y;
 	refractB.y = -refractB.y;
