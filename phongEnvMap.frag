@@ -23,8 +23,6 @@ uniform lightStruct light;
 uniform materialStruct material;
 uniform sampler2D textureUnit0;
 uniform samplerCube textureUnit1;
-
-
 uniform float attConst;
 uniform float attLinear;
 uniform float attQuadratic;
@@ -35,7 +33,6 @@ uniform float dispersionSize;
 vec3 refractR;
 vec3 refractG;
 vec3 refractB;
-
 
 in vec3 ex_WorldNorm;
 in vec3 ex_WorldView;

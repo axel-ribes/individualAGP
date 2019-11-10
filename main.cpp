@@ -320,7 +320,6 @@ void draw(SDL_Window* window) {
 	
 	// draw the  bunny
 	glUseProgram(ChromaticDispersionShaderProgram);
-
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox[0]);
 	glActiveTexture(GL_TEXTURE0);
