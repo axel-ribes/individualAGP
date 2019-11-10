@@ -40,11 +40,6 @@ GLuint textures[1];
 GLuint skybox[5];
 GLuint labels[5];
 
-struct materialState {
-	float reflecFactor;
-	float refractIndex; 
-};
-materialState materialState1 = { 1,1.1};
 float dispersionSize = 0.0001;
 
 //light stuff
@@ -265,14 +260,6 @@ void update(void) {
 	const Uint8* keys = SDL_GetKeyboardState(NULL);
 
 	//to move camera
-	if (keys[SDL_SCANCODE_I]) lightPos[2] -= 0.1;
-	if (keys[SDL_SCANCODE_J]) lightPos[0] -= 0.1;
-	if (keys[SDL_SCANCODE_K]) lightPos[2] += 0.1;
-	if (keys[SDL_SCANCODE_L]) lightPos[0] += 0.1;
-	if (keys[SDL_SCANCODE_U]) lightPos[1] += 0.1;
-	if (keys[SDL_SCANCODE_H]) lightPos[1] -= 0.1;
-
-	//to move lighpos
 	if (keys[SDL_SCANCODE_W])  eye = moveForward(eye, r, 0.1f);
 	if (keys[SDL_SCANCODE_S])  eye = moveForward(eye, r, -0.1f);
 	if (keys[SDL_SCANCODE_A])  eye = moveRight(eye, r, -0.1f);
@@ -331,16 +318,6 @@ void draw(SDL_Window* window) {
 	light0.position[1] = tmp.y;
 	light0.position[2] = tmp.z;
 	rt3d::setLightPos(phongShaderProgram, glm::value_ptr(tmp));
-
-	// draw a small cube block at lightPos
-	glBindTexture(GL_TEXTURE_2D, textures[0]);
-	mvStack.push(mvStack.top());
-	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(lightPos[0], lightPos[1], lightPos[2]));
-	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(0.25f, 0.25f, 0.25f));
-	rt3d::setUniformMatrix4fv(phongShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	rt3d::setMaterial(phongShaderProgram, material0);
-	rt3d::drawIndexedMesh(meshObjects[0], meshIndexCount, GL_TRIANGLES);
-	mvStack.pop();
 	
 	// draw the  bunny
 	glUseProgram(reflectShaderProgram);
@@ -350,12 +327,6 @@ void draw(SDL_Window* window) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, textures[0]);
 	GLuint uniformIndex = glGetUniformLocation(reflectShaderProgram, "cameraPos");
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.reflecFactor");
-	glUniform1i(uniformIndex, materialState1.reflecFactor);
-	uniformIndex = glGetUniformLocation(reflectShaderProgram, "materialState.refractIndex");
-	glUniform1i(uniformIndex, materialState1.refractIndex);
-
-
 	uniformIndex = glGetUniformLocation(reflectShaderProgram, "dispersionSize");
 	glUniform1f(uniformIndex, dispersionSize);
 	
@@ -367,12 +338,6 @@ void draw(SDL_Window* window) {
 	mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
 	mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
 	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelview", glm::value_ptr(mvStack.top()));
-	//mvStack.pop();
-
-	//mvStack.top() = modelMatrix;
-	//mvStack.push(mvStack.top());
-	//mvStack.top() = glm::translate(mvStack.top(), glm::vec3(-4.0f, 0.1f, -2.0f));
-	//mvStack.top() = glm::scale(mvStack.top(), glm::vec3(20.0, 20.0, 20.0));
 	rt3d::setUniformMatrix4fv(reflectShaderProgram, "modelMatrix", glm::value_ptr(mvStack.top()));
 
 	rt3d::setMaterial(reflectShaderProgram, basicmaterial);

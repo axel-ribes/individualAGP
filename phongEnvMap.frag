@@ -4,12 +4,6 @@
 // Some drivers require the following
 precision highp float;
 
-struct materialState
-{
-	float reflecFactor;
-	float refractIndex;
-};
-
 struct lightStruct
 {
 	vec4 ambient;
@@ -28,7 +22,7 @@ struct materialStruct
 uniform lightStruct light;
 uniform materialStruct material;
 uniform sampler2D textureUnit0;
-uniform samplerCube textureUnit1;uniform materialState materialState1; 
+uniform samplerCube textureUnit1;
 
 
 uniform float attConst;
@@ -91,6 +85,6 @@ void main(void) {
 
 	reflect = texture(textureUnit1, reflectTexCoord) * litColour;
 
-	vec4 combinedColor = mix(refractCalculatedColor, reflect, materialState1.reflecFactor);
+	vec4 combinedColor = mix(refractCalculatedColor, reflect, 0);
 	out_Color = combinedColor;
 }
